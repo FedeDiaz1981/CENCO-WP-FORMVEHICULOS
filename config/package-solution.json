@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "cenco-wp-form-vehiculos-client-side-solution",
+    "id": "5cba4272-1a32-44a2-847e-335577bf9a67",
+    "version": "1.5.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.21.1"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "cenco-wp-form-vehiculos description"
+      },
+      "longDescription": {
+        "default": "cenco-wp-form-vehiculos description"
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "cenco-wp-form-vehiculos Feature",
+        "description": "The feature that activates elements of the cenco-wp-form-vehiculos solution.",
+        "id": "6a5c2162-9ca5-42c6-af50-8762547b8cc4",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/cenco-wp-form-vehiculos.sppkg"
+  }
+}

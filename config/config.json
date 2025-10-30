@@ -1,0 +1,18 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "registro-vehicular-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/registroVehicular/RegistroVehicularWebPart.js",
+          "manifest": "./src/webparts/registroVehicular/RegistroVehicularWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "RegistroVehicularWebPartStrings": "lib/webparts/registroVehicular/loc/{locale}.js"
+  }
+}

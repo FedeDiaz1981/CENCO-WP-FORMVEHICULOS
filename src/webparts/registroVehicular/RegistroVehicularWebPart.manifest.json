@@ -1,0 +1,31 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx/client-side-web-part-manifest.schema.json",
+  "id": "f3cca80b-4f25-430e-b33f-55f64d58128d",
+  "alias": "RegistroVehicularWebPart",
+  "componentType": "WebPart",
+  "version": "1.0.0",
+  "manifestVersion": 2,
+  "requiresCustomScript": false,
+  "supportedHosts": [
+    "SharePointWebPart",
+    "SharePointFullPage",
+    "TeamsPersonalApp",
+    "TeamsTab"
+  ],
+  "supportsThemeVariants": true,
+  "preconfiguredEntries": [
+    {
+      "title": { "default": "RegistroVehicular" },
+      "officeFabricIconFontName": "Truck",
+      "properties": {
+        "vehiculosListTitle": "Vehiculos",
+        "proveedoresList": "Proveedores",
+        "proveedoresDisplayField": "Title",
+        "proveedoresUserField": "Usuarios",
+        "Proveedor": true,
+        "Distribuidor": false,
+        "Coordinador": false
+      }
+    }
+  ]
+}
