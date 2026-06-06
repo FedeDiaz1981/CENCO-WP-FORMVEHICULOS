@@ -57,26 +57,6 @@ export const DatosVehiculo: React.FC<{
         [key]: (opt?.key as string) ?? "",
       }));
 
-  // Default "Seco" si no hay valor
-  React.useEffect(() => {
-    if ((vehiculo.Temperatura || "").trim()) return;
-
-    const normalize = (s: any = "") =>
-      String(s)
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim();
-
-    const opts = choices["temperatura"] || [];
-    const secoOpt = opts.find((o) => normalize(o.text) === "seco");
-
-    setVehiculo((s) => ({
-      ...s,
-      Temperatura: secoOpt ? (secoOpt.key as string) : "Seco",
-    }));
-  }, [choices, setVehiculo, vehiculo.Temperatura]);
-
   // Visible "Tipo temperatura" solo si Temperatura = "Con temperatura"
   const showTipoTemperatura = React.useMemo(() => {
     const normalize = (s: any = "") =>

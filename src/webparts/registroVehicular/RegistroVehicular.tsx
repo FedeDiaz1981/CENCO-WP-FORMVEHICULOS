@@ -15,10 +15,11 @@ import {
   deleteVehiculoByPlaca,
 } from "./services/vehiculos.service";
 import {
-  addOrUpdateCertificado,
-  getCertificadosEstado,
-  replaceCertificadoAdjunto,
+  //guardarTodosSecuencial,
+  cargarCertificadosPorPlaca,
   deleteCertificadosPorPlaca,
+  replaceCertificadoAdjunto,
+  //replaceAdjuntoById,
 } from "./services/certificados.service";
 import { CertificadosGrid } from "./components/sections/CertificadosGrid";
 
@@ -68,7 +69,9 @@ export default function RegistroVehicular(props: IRegistroVehicularProps) {
 
   const [accion, setAccion] = React.useState<Accion>("crear");
   const [busy, setBusy] = React.useState(false);
-  const [staged, setStaged] = React.useState<{ tipo: string; file: File }[]>([]);
+  const [staged, setStaged] = React.useState<{ tipo: string; file: File }[]>(
+    []
+  );
   const [isSaving, setIsSaving] = React.useState(false);
 
   const [docValido, setDocValido] = React.useState(true);
@@ -131,27 +134,31 @@ export default function RegistroVehicular(props: IRegistroVehicularProps) {
 
   const lastLoadKeyRef = React.useRef<string>("");
 
- // Control de ejecución + evita loops de carga repetida (sin floating promises)
-React.useEffect(() => {
-  if (accion !== "actualizar" && accion !== "baja") return;
+  // Control de ejecución + evita loops de carga repetida (sin floating promises)
+  React.useEffect(() => {
+    if (accion !== "actualizar" && accion !== "baja") return;
 
-  const filtroEmpresa = filtrarProveedorEfectivo ? vehiculo.Empresa : undefined;
-  const key = `${accion}|${filtroEmpresa ?? ""}`;
-  if (lastLoadKeyRef.current === key) return;
-  lastLoadKeyRef.current = key;
+    const filtroEmpresa = filtrarProveedorEfectivo
+      ? vehiculo.Empresa
+      : undefined;
+    const key = `${accion}|${filtroEmpresa ?? ""}`;
+    if (lastLoadKeyRef.current === key) return;
+    lastLoadKeyRef.current = key;
 
-  // Marcamos explícitamente que no esperamos la promesa y manejamos errores
-  void load(filtroEmpresa).catch(() => { /* silencio */ });
+    // Marcamos explícitamente que no esperamos la promesa y manejamos errores
+    void load(filtroEmpresa).catch(() => {
+      /* silencio */
+    });
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [accion, vehiculo.Empresa, filtrarProveedorEfectivo]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accion, vehiculo.Empresa, filtrarProveedorEfectivo]);
 
   const onInvokeRow = React.useCallback(
     async (item: { Placa: string }) => {
       try {
         const [full, docs] = await Promise.all([
           getVehiculoByPlaca(item.Placa, vehList),
-          getCertificadosEstado(item.Placa),
+          cargarCertificadosPorPlaca(item.Placa),
         ]);
         if (!full) {
           alert("No se encontró la placa en la lista seleccionada.");
@@ -228,12 +235,20 @@ React.useEffect(() => {
     setErroresDocs([]);
   }, []);
 
-  const toDateOnly = (d: Date | null | undefined) =>
-    d
-      ? new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
-      : undefined;
+  // const toDateOnly = (d: Date | null | undefined) =>
+  //   d
+  //     ? new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
+  //     : undefined;
 
   // ====== REPUESTAS QUE FALTABAN ======
+
+  const toISO = (d?: Date | string | null): string | null => {
+    if (!d) return null;
+    // si ya es string, devolvelo
+    if (typeof d === "string") return d;
+    // si es Date, lo pasamos a yyyy-mm-dd
+    return d.toISOString().slice(0, 10);
+  };
 
   async function guardarCertificados() {
     const placa = (vehiculo.Placa || "").trim();
@@ -256,74 +271,89 @@ React.useEffect(() => {
       limpiezaFile,
     } = doc;
 
-    if (propFile)
-      await addOrUpdateCertificado({
-        Placa: placa,
-        certificado: "TARJETA_PROPIEDAD",
-        Adjuntos: [propFile],
+    // 1) Tarjeta de propiedad
+    if (propFile) {
+      await replaceCertificadoAdjunto({
+        placa,
+        tipo: "Tarjeta de propiedad",
+        file: propFile,
       });
+    }
 
-    if (resBonificacionFile)
-      await addOrUpdateCertificado({
-        Placa: placa,
-        certificado: "RESOLUCION_BONIFICACION",
-        Adjuntos: [resBonificacionFile],
+    // 2) Resolución de bonificación (la que es solo archivo)
+    if (resBonificacionFile) {
+      await replaceCertificadoAdjunto({
+        placa,
+        tipo: "Bonificación",
+        file: resBonificacionFile,
       });
+    }
 
-    if (certBonificacionDate || certBonificaFile)
-      await addOrUpdateCertificado({
-        Placa: placa,
-        certificado: "CERTIFICADO_BONIFICACION",
-        emision: toDateOnly(certBonificacionDate),
-        Adjuntos: certBonificaFile ? [certBonificaFile] : [],
+    // 3) Certificado de bonificación (el que tiene fecha)
+    if (certBonificacionDate || certBonificaFile) {
+      await replaceCertificadoAdjunto({
+        placa,
+        tipo: "Certificado de bonificación",
+        emision: toISO(certBonificacionDate),
+        file: certBonificaFile ?? null,
       });
+    }
 
-    if (revTecDate || revTecText || revTecFile)
-      await addOrUpdateCertificado({
-        Placa: placa,
-        certificado: "REVISION_TECNICA",
-        emision: toDateOnly(revTecDate),
+    // 4) Revisión técnica
+    if (revTecDate || revTecText || revTecFile) {
+      await replaceCertificadoAdjunto({
+        placa,
+        tipo: "Revisión técnica",
+        // para RT suele ir en caducidad
+        caducidad: toISO(revTecDate),
         anio: (revTecText || "").trim(),
-        Adjuntos: revTecFile ? [revTecFile] : [],
+        file: revTecFile ?? null,
       });
+    }
 
-    if (SanipesDate || SanipesText || sanipesFile)
-      await addOrUpdateCertificado({
-        Placa: placa,
-        certificado: "SANIPES",
-        resolucion: toDateOnly(SanipesDate),
+    // 5) Sanipes
+    if (SanipesDate || SanipesText || sanipesFile) {
+      await replaceCertificadoAdjunto({
+        placa,
+        tipo: "Sanipes",
+        resolucion: toISO(SanipesDate),
         expediente: (SanipesText || "").trim(),
-        Adjuntos: sanipesFile ? [sanipesFile] : [],
+        file: sanipesFile ?? null,
       });
+    }
 
-    if (termokingDate || termokingFile)
-      await addOrUpdateCertificado({
-        Placa: placa,
-        certificado: "TERMOKING",
-        emision: toDateOnly(termokingDate),
-        Adjuntos: termokingFile ? [termokingFile] : [],
+    // 6) Termoking
+    if (termokingDate || termokingFile) {
+      await replaceCertificadoAdjunto({
+        placa,
+        tipo: "Termoking",
+        emision: toISO(termokingDate),
+        file: termokingFile ?? null,
       });
+    }
 
-    if (limpiezaDate || limpiezaFile)
-      await addOrUpdateCertificado({
-        Placa: placa,
-        certificado: "LIMPIEZA_DESINFECCION",
-        emision: toDateOnly(limpiezaDate),
-        Adjuntos: limpiezaFile ? [limpiezaFile] : [],
+    // 7) Limpieza y desinfección
+    if (limpiezaDate || limpiezaFile) {
+      await replaceCertificadoAdjunto({
+        placa,
+        tipo: "Limpieza y desinfección",
+        emision: toISO(limpiezaDate),
+        file: limpiezaFile ?? null,
       });
+    }
   }
 
-  async function guardarStagedCertificados() {
+  async function guardarStagedCertificados(): Promise<void> {
     const placa = (vehiculo.Placa || "").trim();
     if (!placa || staged.length === 0) return;
     for (const it of staged) {
-      await replaceCertificadoAdjunto(placa, it.tipo, it.file);
+      await replaceCertificadoAdjunto({ placa, tipo: it.tipo, file: it.file });
     }
   }
 
   // ====================================
 
-  async function eliminarVehiculoYCertificados() {
+  async function eliminarVehiculoYCertificados(): Promise<void> {
     const placa = (vehiculo.Placa || "").trim();
     if (!placa) {
       alert("Selecciona una placa para dar de baja.");
@@ -334,7 +364,7 @@ React.useEffect(() => {
   }
 
   // Garantiza que busy se libere siempre
-  async function onGuardar() {
+  async function onGuardar(): Promise<void> {
     if (!vehiculo.Placa) {
       alert("Placa es obligatoria.");
       return;

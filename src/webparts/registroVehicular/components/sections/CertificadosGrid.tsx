@@ -16,6 +16,7 @@ import {
   CertRow,
 } from "../../services/certificados.service";
 import { classes } from "../../ui/styles";
+import { SP } from "../../../../pnp";
 
 type RowEx = CertRow & {
   _newFile?: File | null;
@@ -78,7 +79,7 @@ export const CertificadosGrid: React.FC<{
       }
       setLoading(true);
       try {
-        const data = await getCertificadosListado(placa);
+        const data = await getCertificadosListado(SP(), placa);
 
         // Aplica las mismas reglas de Documentacion.tsx
         const filtered = data.filter((r) => isVisible(r.tipo));
